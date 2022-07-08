@@ -23,11 +23,6 @@ class Status(models.Model):
 
 
 class Presentation(models.Model):
-    """
-    The Presentation model represents a presentation that a person
-    wants to give at the conference.
-    """
-
     presenter_name = models.CharField(max_length=150)
     company_name = models.CharField(max_length=150, null=True, blank=True)
     presenter_email = models.EmailField()
@@ -66,3 +61,10 @@ class Presentation(models.Model):
 
     class Meta:
         ordering = ("title",)  # Default ordering for presentation
+
+    @classmethod
+    def create(cls, **kwargs):
+        kwargs["status"] = Status.objects.get(name="SUBMITTED")
+        presentation = cls(**kwargs)
+        presentation.save()
+        return presentation
