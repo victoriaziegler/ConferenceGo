@@ -3,11 +3,54 @@ from .models import Conference, Location, State
 from common.json import ModelEncoder
 from django.views.decorators.http import require_http_methods
 import json
+from .acls import picture_generator, weather_generator
+
+
+class LocationListEncoder(ModelEncoder):
+    model = Location
+    properties = [
+        "name",
+        "city",
+    ]
+
+
+class ConferenceDetailEncoder(ModelEncoder):
+    model = Conference
+    properties = [
+        "name",
+        "description",
+        "max_presentations",
+        "max_attendees",
+        "starts",
+        "ends",
+        "created",
+        "updated",
+        "location",
+    ]
+    encoders = {
+        "location": LocationListEncoder(),
+    }
 
 
 class ConferenceListEncoder(ModelEncoder):
     model = Conference
     properties = ["name"]
+
+
+class LocationDetailEncoder(ModelEncoder):
+    model = Location
+    properties = [
+        "name",
+        "city",
+        "room_count",
+        "created",
+        "updated",
+        "state",
+        "picture_url",
+    ]
+
+    def get_extra_data(self, o):
+        return {"state": o.state.abbreviation}
 
 
 @require_http_methods(["GET", "POST"])
@@ -37,35 +80,16 @@ def api_list_conferences(request):
         )
 
 
-class LocationListEncoder(ModelEncoder):
-    model = Location
-    properties = ["name"]
-
-
-class ConferenceDetailEncoder(ModelEncoder):
-    model = Conference
-    properties = [
-        "name",
-        "description",
-        "max_presentations",
-        "max_attendees",
-        "starts",
-        "ends",
-        "created",
-        "updated",
-        "location",
-    ]
-    encoders = {
-        "location": LocationListEncoder(),
-    }
-
-
 @require_http_methods(["DELETE", "GET", "PUT"])
 def api_show_conference(request, pk):
     if request.method == "GET":
         conference = Conference.objects.get(id=pk)
+        weather = weather_generator(
+            conference.location.city,
+            conference.location.state.abbreviation,
+        )
         return JsonResponse(
-            conference,
+            {"conference": conference, "weather": weather},
             encoder=ConferenceDetailEncoder,
             safe=False,
         )
@@ -85,8 +109,12 @@ def api_show_conference(request, pk):
             )
         Conference.objects.filter(id=pk).update(**content)
         conference = Conference.objects.get(id=pk)
+        weather = weather_generator(
+            conference.location.city,
+            conference.location.state.abbreviation,
+        )
         return JsonResponse(
-            conference,
+            {"conference": conference, "weather": weather},
             encoder=ConferenceDetailEncoder,
             safe=False,
         )
@@ -103,6 +131,8 @@ def api_list_locations(request):
     else:
         # copied from create
         content = json.loads(request.body)
+        photo = picture_generator(content["city"], content["state"])
+        content.update(photo)
         try:
             # Get the State object and put it in the content dict
             state = State.objects.get(abbreviation=content["state"])
@@ -119,21 +149,6 @@ def api_list_locations(request):
             encoder=LocationDetailEncoder,
             safe=False,
         )
-
-
-class LocationDetailEncoder(ModelEncoder):
-    model = Location
-    properties = [
-        "name",
-        "city",
-        "room_count",
-        "created",
-        "updated",
-        "state",
-    ]
-
-    def get_extra_data(self, o):
-        return {"state": o.state.abbreviation}
 
 
 @require_http_methods(["DELETE", "GET", "PUT"])

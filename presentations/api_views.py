@@ -5,8 +5,6 @@ from django.views.decorators.http import require_http_methods
 import json
 from events.models import Conference
 
-# from events.models import Conference
-
 
 class PresentationListEncoder(ModelEncoder):
     model = Presentation
