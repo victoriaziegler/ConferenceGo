@@ -9,11 +9,10 @@ class ConferenceVO(models.Model):
 
 
 class AccountVO(models.Model):
-    email: models.EmailField()
-    first_name: models.CharField(max_length=200)
-    last_name: models.CharField(max_length=200)
-    is_active: models.BooleanField()
-    updated: models.DateTimeField()
+    email = models.EmailField()
+    first_name = models.CharField(max_length=200)
+    last_name = models.CharField(max_length=200)
+    updated = models.DateTimeField()
 
 
 class Attendee(models.Model):
@@ -28,7 +27,7 @@ class Attendee(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
     conference = models.ForeignKey(
-        "ConferenceVO",
+        ConferenceVO,
         related_name="attendees",
         on_delete=models.CASCADE,
     )

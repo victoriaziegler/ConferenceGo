@@ -41,18 +41,15 @@ class AttendeeDetailEncoder(ModelEncoder):
 def api_list_attendees(request, conference_vo_id=None):
     if request.method == "GET":
         attendees = Attendee.objects.filter(conference=conference_vo_id)
-        return JsonResponse(
-            {"attendees": attendees},
-            encoder=AttendeeListEncoder,
-        )
-    else:
+        return JsonResponse(attendees, encoder=AttendeeListEncoder, safe=False)
+    else:  # POST
         content = json.loads(request.body)
-
-        # Get the Conference object and put it in the content dict
         try:
-            conference_href = content["conference"]
+            conference_href = f"/api/conferences/{conference_vo_id}/"
             conference = ConferenceVO.objects.get(import_href=conference_href)
             content["conference"] = conference
+
+            # THIS CHANGES TO ConferenceVO
         except ConferenceVO.DoesNotExist:
             return JsonResponse(
                 {"message": "Invalid conference id"},
